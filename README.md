@@ -27,7 +27,9 @@ Instead of typing a vague one-paragraph prompt, you answer focused questions ste
 
 ## AI review setup
 
-Open **AI settings** in the sidebar and paste an Anthropic API key (from console.anthropic.com), or start the app with `ANTHROPIC_API_KEY` set. The saved key is encrypted with the OS keychain via Electron `safeStorage` and is only used by the main process; the UI never reads it back. If no keychain is available (some Linux setups), the settings dialog warns that the key will be stored unencrypted.
+AI is optional: everything else works offline without a key, and nothing is sent anywhere unless you click **Review my spec**. To hide AI entirely, open **Settings** in the sidebar and untick **Show AI features**.
+
+To use it, open **Settings** in the sidebar and paste an Anthropic API key (from console.anthropic.com), or start the app with `ANTHROPIC_API_KEY` set. The saved key is encrypted with the OS keychain via Electron `safeStorage` and is only used by the main process; the UI never reads it back. If no keychain is available (some Linux setups), the settings dialog warns that the key will be stored unencrypted.
 
 The review uses `claude-opus-5-5` with structured JSON output, so suggestions can be applied straight into the right fields. It sends the generated Markdown of the current spec, nothing else.
 

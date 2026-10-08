@@ -4,10 +4,12 @@ import type { AiStatus } from '../lib/storage';
 interface Props {
   status: AiStatus | null;
   onStatus: (s: AiStatus) => void;
+  aiEnabled: boolean;
+  onAiEnabled: (enabled: boolean) => void;
   onClose: () => void;
 }
 
-export function AiSettings({ status, onStatus, onClose }: Props) {
+export function SettingsDialog({ status, onStatus, aiEnabled, onAiEnabled, onClose }: Props) {
   const [key, setKey] = useState('');
   const [busy, setBusy] = useState(false);
   const desktop = !!window.api;
@@ -31,9 +33,17 @@ export function AiSettings({ status, onStatus, onClose }: Props) {
 
   return (
     <div className="modal-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="modal" role="dialog" aria-modal="true" aria-labelledby="ai-settings-title">
-        <h2 id="ai-settings-title">AI settings</h2>
-        {!desktop ? (
+      <div className="modal" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+        <h2 id="settings-title">Settings</h2>
+        <label className="checkbox">
+          <input type="checkbox" checked={aiEnabled} onChange={(e) => onAiEnabled(e.target.checked)} />
+          Show AI features
+        </label>
+        <p className="help">
+          Adds "Improve with AI" to the Review step. Turn off to use the app fully offline; your saved key, if any, is
+          kept.
+        </p>
+        {!aiEnabled ? null : !desktop ? (
           <p>AI review needs the desktop app (run <code>npm run dev</code>), because the API key is kept out of the browser.</p>
         ) : (
           <>
@@ -89,7 +99,7 @@ export function AiSettings({ status, onStatus, onClose }: Props) {
             </form>
           </>
         )}
-        {!desktop && (
+        {(!desktop || !aiEnabled) && (
           <div className="modal-actions">
             <button type="button" className="secondary-btn" onClick={onClose}>
               Close

@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AiReview } from './components/AiReview';
-import { AiSettings } from './components/AiSettings';
+import { SettingsDialog } from './components/SettingsDialog';
 import { STEPS, type Update } from './components/steps';
 import type { Review } from './lib/ai';
 import { generateMarkdown } from './lib/markdown';
 import { completeness, lintSpec, type Issue } from './lib/lint';
 import { emptySpec, fileNameFor, type Spec } from './lib/spec';
+import { loadAiEnabled, saveAiEnabled } from './lib/prefs';
 import { deleteSpec, exportFile, importDraft, listSpecs, saveSpec, type AiStatus } from './lib/storage';
 
 const slug = (s: string) => s.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'spec';
@@ -18,7 +19,8 @@ export default function App() {
   const [showPreview, setShowPreview] = useState(true);
   const [review, setReview] = useState<Review | null>(null);
   const [aiStatus, setAiStatus] = useState<AiStatus | null>(null);
-  const [showAiSettings, setShowAiSettings] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [aiEnabled, setAiEnabled] = useState(loadAiEnabled);
   const dirty = useRef(false);
 
   useEffect(() => {
@@ -190,9 +192,9 @@ export default function App() {
             </div>
           ))}
         </div>
-        <button type="button" className="ai-settings-btn" onClick={() => setShowAiSettings(true)}>
-          <span className={`dot ${aiStatus?.configured ? 'on' : ''}`} aria-hidden />
-          AI settings
+        <button type="button" className="ai-settings-btn" onClick={() => setShowSettings(true)}>
+          {aiEnabled && <span className={`dot ${aiStatus?.configured ? 'on' : ''}`} title="AI key configured" />}
+          Settings
         </button>
       </aside>
 
@@ -211,16 +213,18 @@ export default function App() {
           {step.render({ spec, update })}
           {step.id === 'review' && (
             <>
-              <AiReview
-                spec={spec}
-                update={update}
-                review={review}
-                setReview={setReview}
-                aiAvailable={!!aiStatus?.configured}
-                onOpenSettings={() => setShowAiSettings(true)}
-                onJump={goTo}
-                notify={notify}
-              />
+              {aiEnabled && (
+                <AiReview
+                  spec={spec}
+                  update={update}
+                  review={review}
+                  setReview={setReview}
+                  aiAvailable={!!aiStatus?.configured}
+                  onOpenSettings={() => setShowSettings(true)}
+                  onJump={goTo}
+                  notify={notify}
+                />
+              )}
               <IssueList issues={issues} score={score} onJump={goTo} />
             </>
           )}
@@ -276,8 +280,17 @@ export default function App() {
         </section>
       )}
 
-      {showAiSettings && (
-        <AiSettings status={aiStatus} onStatus={setAiStatus} onClose={() => setShowAiSettings(false)} />
+      {showSettings && (
+        <SettingsDialog
+          status={aiStatus}
+          onStatus={setAiStatus}
+          aiEnabled={aiEnabled}
+          onAiEnabled={(on) => {
+            setAiEnabled(on);
+            saveAiEnabled(on);
+          }}
+          onClose={() => setShowSettings(false)}
+        />
       )}
 
       {toast && (
