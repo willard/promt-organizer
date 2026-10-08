@@ -18,11 +18,18 @@ Instead of typing a vague one-paragraph prompt, you answer focused questions ste
 
 ## Features
 
+- **Improve with AI**: Claude reviews the spec and proposes missing acceptance criteria, non-goals, milestones and agent rules, and flags contradictions. Each suggestion is editable and is only added when you click Apply (or Apply all)
 - Live Markdown preview with a completeness meter
 - **Spec check**: missing essentials, features without acceptance criteria, and vague words like "fast" or "user-friendly"
 - Drafts autosave to the app's user-data folder; switch between multiple specs in the sidebar
 - Export `.md` via a native save dialog, copy to clipboard, or save / import a draft as `.spec.json` to share
 - Light and dark theme follow the OS
+
+## AI review setup
+
+Open **AI settings** in the sidebar and paste an Anthropic API key (from console.anthropic.com), or start the app with `ANTHROPIC_API_KEY` set. The saved key is encrypted with the OS keychain via Electron `safeStorage` and is only used by the main process; the UI never reads it back. If no keychain is available (some Linux setups), the settings dialog warns that the key will be stored unencrypted.
+
+The review uses `claude-opus-5-5` with structured JSON output, so suggestions can be applied straight into the right fields. It sends the generated Markdown of the current spec, nothing else.
 
 ## Development
 
@@ -46,6 +53,8 @@ electron/preload.cjs     Exposes a minimal window.api to the renderer (context i
 src/lib/spec.ts          Spec data model, defaults, project types, stack suggestions
 src/lib/markdown.ts      Spec → Markdown generator
 src/lib/lint.ts          Spec check and completeness score
+src/lib/ai.ts            AI review: prompt, JSON schema, response validation, applying suggestions
+src/components/AiReview.tsx  AI review panel on the Review step
 src/lib/storage.ts       Desktop IPC wrapper with browser fallback
 src/components/steps.tsx The wizard questions
 src/components/fields.tsx Form controls (text, list, segmented)

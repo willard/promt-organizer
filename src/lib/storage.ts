@@ -6,7 +6,20 @@ interface DesktopApi {
   deleteSpec(id: string): Promise<boolean>;
   saveText(opts: { defaultName: string; content: string; filters: { name: string; extensions: string[] }[] }): Promise<string | null>;
   openJson(): Promise<string | null>;
+  aiStatus(): Promise<AiStatus>;
+  aiSetKey(key: string): Promise<AiStatus>;
+  aiClearKey(): Promise<AiStatus>;
+  aiComplete(req: { system: string; prompt: string; schema: object }): Promise<AiResult>;
 }
+
+export interface AiStatus {
+  configured: boolean;
+  source: 'saved' | 'env' | null;
+  /** False when no OS keychain is available and a saved key would be stored in plain text. */
+  encrypted: boolean;
+}
+
+export type AiResult = { ok: true; text: string; model: string } | { ok: false; error: string };
 
 declare global {
   interface Window {

@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { AiReview } from './components/AiReview';
+import { AiSettings } from './components/AiSettings';
 import { STEPS, type Update } from './components/steps';
+import type { Review } from './lib/ai';
 import { generateMarkdown } from './lib/markdown';
 import { completeness, lintSpec, type Issue } from './lib/lint';
 import { emptySpec, fileNameFor, type Spec } from './lib/spec';
-import { deleteSpec, exportFile, importDraft, listSpecs, saveSpec } from './lib/storage';
+import { deleteSpec, exportFile, importDraft, listSpecs, saveSpec, type AiStatus } from './lib/storage';
 
 const slug = (s: string) => s.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'spec';
 
@@ -13,7 +16,14 @@ export default function App() {
   const [stepIndex, setStepIndex] = useState(0);
   const [toast, setToast] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(true);
+  const [review, setReview] = useState<Review | null>(null);
+  const [aiStatus, setAiStatus] = useState<AiStatus | null>(null);
+  const [showAiSettings, setShowAiSettings] = useState(false);
   const dirty = useRef(false);
+
+  useEffect(() => {
+    window.api?.aiStatus().then(setAiStatus);
+  }, []);
 
   useEffect(() => {
     listSpecs().then((list) => {
@@ -63,12 +73,14 @@ export default function App() {
 
   const openDraft = (s: Spec) => {
     flush();
+    setReview(null);
     setSpec(s);
     setStepIndex(0);
   };
 
   const newDraft = () => {
     flush();
+    setReview(null);
     setSpec(emptySpec());
     setStepIndex(0);
   };
@@ -108,6 +120,7 @@ export default function App() {
       const s = await importDraft();
       if (!s) return;
       flush();
+      setReview(null);
       dirty.current = true;
       setSpec({ ...s, updatedAt: new Date().toISOString() });
       setStepIndex(0);
@@ -177,6 +190,10 @@ export default function App() {
             </div>
           ))}
         </div>
+        <button type="button" className="ai-settings-btn" onClick={() => setShowAiSettings(true)}>
+          <span className={`dot ${aiStatus?.configured ? 'on' : ''}`} aria-hidden />
+          AI settings
+        </button>
       </aside>
 
       <main className="wizard">
@@ -192,7 +209,21 @@ export default function App() {
 
         <div className="wizard-body">
           {step.render({ spec, update })}
-          {step.id === 'review' && <IssueList issues={issues} score={score} onJump={goTo} />}
+          {step.id === 'review' && (
+            <>
+              <AiReview
+                spec={spec}
+                update={update}
+                review={review}
+                setReview={setReview}
+                aiAvailable={!!aiStatus?.configured}
+                onOpenSettings={() => setShowAiSettings(true)}
+                onJump={goTo}
+                notify={notify}
+              />
+              <IssueList issues={issues} score={score} onJump={goTo} />
+            </>
+          )}
           {step.id !== 'review' && (issuesByStep.get(step.id)?.length ?? 0) > 0 && (
             <IssueList issues={issuesByStep.get(step.id)!} compact />
           )}
@@ -243,6 +274,10 @@ export default function App() {
           </header>
           <pre className="preview-body">{markdown}</pre>
         </section>
+      )}
+
+      {showAiSettings && (
+        <AiSettings status={aiStatus} onStatus={setAiStatus} onClose={() => setShowAiSettings(false)} />
       )}
 
       {toast && (
