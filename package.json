@@ -1,0 +1,56 @@
+{
+  "name": "prompt-organizer",
+  "productName": "Prompt Organizer",
+  "version": "0.1.0",
+  "description": "Desktop wizard that turns answers to guided questions into a project spec Markdown file for AI coding agents.",
+  "main": "electron/main.cjs",
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "dev": "concurrently -k -n vite,electron \"vite\" \"wait-on tcp:5173 && cross-env VITE_DEV_SERVER_URL=http://localhost:5173 electron .\"",
+    "dev:web": "vite",
+    "build": "tsc --noEmit && vite build",
+    "start": "electron .",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "dist": "npm run build && electron-builder"
+  },
+  "build": {
+    "appId": "dev.promptorganizer.app",
+    "productName": "Prompt Organizer",
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "mac": {
+      "target": "dmg"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
+    "@vitejs/plugin-react": "^4.7.0",
+    "concurrently": "^10.0.5",
+    "cross-env": "^10.1.0",
+    "electron": "^33.4.11",
+    "electron-builder": "^26.15.3",
+    "typescript": "^5.9.3",
+    "vite": "^5.4.21",
+    "vitest": "^2.1.9",
+    "wait-on": "^9.5.1"
+  }
+}

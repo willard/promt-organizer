@@ -1,0 +1,53 @@
+# Prompt Organizer
+
+A desktop app that turns a guided Q&A into a project spec Markdown file you hand to an AI coding agent (Claude Code, Codex, Cursor, …).
+
+Instead of typing a vague one-paragraph prompt, you answer focused questions step by step. The app builds a structured `SPEC.md`, `CLAUDE.md` or `AGENTS.md` live as you type, and flags the gaps that usually make an agent guess wrong.
+
+## Wizard steps
+
+1. **Overview** – name, pitch, project type, new vs. existing codebase, summary
+2. **Problem & users** – the pain, who the users are, goals, non-goals
+3. **Features** – each with priority (Must / Should / Nice to have) and acceptance criteria, plus key user flows
+4. **Tech stack** – languages, frameworks, database, hosting, libraries to use or avoid (with suggestions per project type)
+5. **Architecture** – overview, data model entities, integrations, API / interfaces
+6. **Quality** – testing, security, performance, accessibility, error handling
+7. **Agent rules** – workflow (plan first / iterate / TDD), commands, code style, folder structure, always / never rules
+8. **Delivery** – milestones, definition of done, open questions
+9. **Review & export** – pick the output format and fix what the spec check finds
+
+## Features
+
+- Live Markdown preview with a completeness meter
+- **Spec check**: missing essentials, features without acceptance criteria, and vague words like "fast" or "user-friendly"
+- Drafts autosave to the app's user-data folder; switch between multiple specs in the sidebar
+- Export `.md` via a native save dialog, copy to clipboard, or save / import a draft as `.spec.json` to share
+- Light and dark theme follow the OS
+
+## Development
+
+Requires Node.js 20+.
+
+```bash
+npm install
+npm run dev        # Vite dev server + Electron window with hot reload
+npm run dev:web    # UI only, in the browser (drafts go to localStorage)
+npm test           # unit tests for the Markdown generator and spec check
+npm run build      # typecheck + production build into dist/
+npm start          # run Electron against the production build
+npm run dist       # package installers (dmg / nsis / AppImage) into release/
+```
+
+## Project layout
+
+```
+electron/main.cjs        Electron main process: window, file dialogs, draft storage (IPC)
+electron/preload.cjs     Exposes a minimal window.api to the renderer (context isolated, sandboxed)
+src/lib/spec.ts          Spec data model, defaults, project types, stack suggestions
+src/lib/markdown.ts      Spec → Markdown generator
+src/lib/lint.ts          Spec check and completeness score
+src/lib/storage.ts       Desktop IPC wrapper with browser fallback
+src/components/steps.tsx The wizard questions
+src/components/fields.tsx Form controls (text, list, segmented)
+src/App.tsx              Layout: sidebar, wizard, preview
+```
