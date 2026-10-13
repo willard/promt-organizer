@@ -1,13 +1,25 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AiReview } from './components/AiReview';
 import { SettingsDialog } from './components/SettingsDialog';
+import { SaveTemplateDialog, TemplatePicker } from './components/TemplateDialogs';
 import { STEPS, type Update } from './components/steps';
 import type { Review } from './lib/ai';
 import { generateMarkdown } from './lib/markdown';
 import { completeness, lintSpec, type Issue } from './lib/lint';
 import { emptySpec, fileNameFor, type Spec } from './lib/spec';
 import { loadAiEnabled, saveAiEnabled } from './lib/prefs';
-import { deleteSpec, exportFile, importDraft, listSpecs, saveSpec, type AiStatus } from './lib/storage';
+import {
+  deleteSpec,
+  deleteTemplate,
+  exportFile,
+  importDraft,
+  listSpecs,
+  listTemplates,
+  saveSpec,
+  saveTemplate,
+  type AiStatus,
+} from './lib/storage';
+import { specFromTemplate, type Template } from './lib/templates';
 
 const slug = (s: string) => s.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'spec';
 
@@ -21,10 +33,14 @@ export default function App() {
   const [aiStatus, setAiStatus] = useState<AiStatus | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [aiEnabled, setAiEnabled] = useState(loadAiEnabled);
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [showPicker, setShowPicker] = useState(false);
+  const [showSaveTemplate, setShowSaveTemplate] = useState(false);
   const dirty = useRef(false);
 
   useEffect(() => {
     window.api?.aiStatus().then(setAiStatus);
+    listTemplates().then(setTemplates);
   }, []);
 
   useEffect(() => {
@@ -80,11 +96,36 @@ export default function App() {
     setStepIndex(0);
   };
 
-  const newDraft = () => {
+  const newDraft = (template?: Template) => {
     flush();
     setReview(null);
-    setSpec(emptySpec());
+    // A blank spec is only saved once edited; one from a template already has content worth keeping.
+    dirty.current = !!template;
+    setSpec(template ? specFromTemplate(template) : emptySpec());
     setStepIndex(0);
+  };
+
+  const pickTemplate = (t: Template | null) => {
+    setShowPicker(false);
+    newDraft(t ?? undefined);
+    if (t) notify(`Started from "${t.name}"`);
+  };
+
+  const storeTemplate = async (t: Template) => {
+    try {
+      await saveTemplate(t);
+      setTemplates((list) => [t, ...list]);
+      setShowSaveTemplate(false);
+      notify(`Template "${t.name}" saved`);
+    } catch {
+      notify('Could not save template');
+    }
+  };
+
+  const removeTemplate = async (t: Template) => {
+    if (!confirm(`Delete template "${t.name}"? Specs made from it are not affected.`)) return;
+    await deleteTemplate(t.id);
+    setTemplates((list) => list.filter((x) => x.id !== t.id));
   };
 
   const removeDraft = async (s: Spec) => {
@@ -150,7 +191,7 @@ export default function App() {
           Prompt Organizer
         </div>
         <div className="sidebar-actions">
-          <button type="button" className="primary-btn" onClick={newDraft}>
+          <button type="button" className="primary-btn" onClick={() => setShowPicker(true)}>
             + New spec
           </button>
           <button type="button" className="secondary-btn" onClick={importJson} title="Import a .spec.json draft">
@@ -226,6 +267,15 @@ export default function App() {
                 />
               )}
               <IssueList issues={issues} score={score} onJump={goTo} />
+              <div className="template-cta">
+                <div>
+                  <strong>Reuse this setup</strong>
+                  <p className="help">Save the stack, rules and quality bar as a template for your next project.</p>
+                </div>
+                <button type="button" className="secondary-btn" onClick={() => setShowSaveTemplate(true)}>
+                  Save as template
+                </button>
+              </div>
             </>
           )}
           {step.id !== 'review' && (issuesByStep.get(step.id)?.length ?? 0) > 0 && (
@@ -278,6 +328,19 @@ export default function App() {
           </header>
           <pre className="preview-body">{markdown}</pre>
         </section>
+      )}
+
+      {showPicker && (
+        <TemplatePicker
+          templates={templates}
+          onPick={pickTemplate}
+          onDelete={removeTemplate}
+          onClose={() => setShowPicker(false)}
+        />
+      )}
+
+      {showSaveTemplate && (
+        <SaveTemplateDialog spec={spec} onSave={storeTemplate} onClose={() => setShowSaveTemplate(false)} />
       )}
 
       {showSettings && (

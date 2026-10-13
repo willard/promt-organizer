@@ -834,3 +834,107 @@ pre {
   margin-right: auto;
   align-self: center;
 }
+
+/* Templates */
+.modal.wide {
+  width: min(760px, calc(100vw - 32px));
+  max-height: calc(100vh - 64px);
+  overflow-y: auto;
+}
+
+.tpl-heading {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin: 18px 0 6px;
+}
+
+.tpl-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.tpl-card {
+  position: relative;
+  display: flex;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--panel);
+}
+
+.tpl-card:hover,
+.tpl-card:focus-within {
+  border-color: var(--accent);
+}
+
+.tpl-card.blank {
+  border-style: dashed;
+}
+
+.tpl-open {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  border-radius: var(--radius);
+}
+
+.tpl-card .icon-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+}
+
+.tpl-name {
+  font-weight: 600;
+  padding-right: 24px;
+}
+
+.tpl-desc {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.tpl-tags {
+  color: var(--accent);
+  font-size: 11px;
+}
+
+.tpl-sections {
+  border: 0;
+  padding: 0;
+  margin: 10px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.modal input[type='text'] {
+  margin-bottom: 8px;
+}
+
+.template-cta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+}
+
+.template-cta .help {
+  margin: 2px 0 0;
+}
+
+.template-cta .secondary-btn {
+  flex-shrink: 0;
+}

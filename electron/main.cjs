@@ -2,7 +2,6 @@ const { app, BrowserWindow, ipcMain, dialog, shell, safeStorage } = require('ele
 const path = require('node:path');
 const fs = require('node:fs/promises');
 
-const specsDir = () => path.join(app.getPath('userData'), 'specs');
 const safeId = (id) => String(id).replace(/[^a-zA-Z0-9_-]/g, '');
 
 function createWindow() {
@@ -34,30 +33,35 @@ function createWindow() {
   }
 }
 
-ipcMain.handle('specs:list', async () => {
-  await fs.mkdir(specsDir(), { recursive: true });
-  const files = (await fs.readdir(specsDir())).filter((f) => f.endsWith('.json'));
-  const specs = [];
-  for (const file of files) {
-    try {
-      specs.push(JSON.parse(await fs.readFile(path.join(specsDir(), file), 'utf8')));
-    } catch {
-      // Skip unreadable or corrupt drafts rather than failing the whole list.
+// Spec drafts and user templates are each stored as one JSON file per item in userData/<collection>/.
+for (const collection of ['specs', 'templates']) {
+  const dir = () => path.join(app.getPath('userData'), collection);
+
+  ipcMain.handle(`${collection}:list`, async () => {
+    await fs.mkdir(dir(), { recursive: true });
+    const files = (await fs.readdir(dir())).filter((f) => f.endsWith('.json'));
+    const items = [];
+    for (const file of files) {
+      try {
+        items.push(JSON.parse(await fs.readFile(path.join(dir(), file), 'utf8')));
+      } catch {
+        // Skip unreadable or corrupt files rather than failing the whole list.
+      }
     }
-  }
-  return specs;
-});
+    return items;
+  });
 
-ipcMain.handle('specs:save', async (_e, spec) => {
-  await fs.mkdir(specsDir(), { recursive: true });
-  await fs.writeFile(path.join(specsDir(), `${safeId(spec.id)}.json`), JSON.stringify(spec, null, 2));
-  return true;
-});
+  ipcMain.handle(`${collection}:save`, async (_e, item) => {
+    await fs.mkdir(dir(), { recursive: true });
+    await fs.writeFile(path.join(dir(), `${safeId(item.id)}.json`), JSON.stringify(item, null, 2));
+    return true;
+  });
 
-ipcMain.handle('specs:delete', async (_e, id) => {
-  await fs.rm(path.join(specsDir(), `${safeId(id)}.json`), { force: true });
-  return true;
-});
+  ipcMain.handle(`${collection}:delete`, async (_e, id) => {
+    await fs.rm(path.join(dir(), `${safeId(id)}.json`), { force: true });
+    return true;
+  });
+}
 
 ipcMain.handle('file:saveText', async (e, { defaultName, content, filters }) => {
   const win = BrowserWindow.fromWebContents(e.sender);

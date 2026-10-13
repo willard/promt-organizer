@@ -1,9 +1,13 @@
 import { normalizeSpec, type Spec } from './spec';
+import { normalizeTemplate, type Template } from './templates';
 
 interface DesktopApi {
   listSpecs(): Promise<unknown[]>;
   saveSpec(spec: Spec): Promise<boolean>;
   deleteSpec(id: string): Promise<boolean>;
+  listTemplates(): Promise<unknown[]>;
+  saveTemplate(template: Template): Promise<boolean>;
+  deleteTemplate(id: string): Promise<boolean>;
   saveText(opts: { defaultName: string; content: string; filters: { name: string; extensions: string[] }[] }): Promise<string | null>;
   openJson(): Promise<string | null>;
   aiStatus(): Promise<AiStatus>;
@@ -67,6 +71,50 @@ export async function deleteSpec(id: string): Promise<void> {
     return;
   }
   writeLocal(readLocal().filter((s) => s.id !== id));
+}
+
+const LS_TEMPLATES_KEY = 'prompt-organizer:templates';
+
+function readLocalTemplates(): unknown[] {
+  try {
+    return JSON.parse(localStorage.getItem(LS_TEMPLATES_KEY) ?? '[]');
+  } catch {
+    return [];
+  }
+}
+
+function writeLocalTemplates(templates: Template[]) {
+  try {
+    localStorage.setItem(LS_TEMPLATES_KEY, JSON.stringify(templates));
+  } catch {
+    // Storage full or blocked; templates just won't persist in the browser build.
+  }
+}
+
+/** User-saved templates, newest first. Built-ins live in code, not here. */
+export async function listTemplates(): Promise<Template[]> {
+  const raw = window.api ? await window.api.listTemplates() : readLocalTemplates();
+  return raw
+    .map(normalizeTemplate)
+    .filter((t): t is Template => t !== null)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+export async function saveTemplate(template: Template): Promise<void> {
+  if (window.api) {
+    await window.api.saveTemplate(template);
+    return;
+  }
+  const rest = (await listTemplates()).filter((t) => t.id !== template.id);
+  writeLocalTemplates([template, ...rest]);
+}
+
+export async function deleteTemplate(id: string): Promise<void> {
+  if (window.api) {
+    await window.api.deleteTemplate(id);
+    return;
+  }
+  writeLocalTemplates((await listTemplates()).filter((t) => t.id !== id));
 }
 
 function downloadInBrowser(name: string, content: string, type: string) {
