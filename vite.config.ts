@@ -21,5 +21,6 @@ export default defineConfig({
   plugins: [react(), csp],
   // Relative asset paths so the built index.html loads via file:// in Electron.
   base: './',
-  server: { port: 5173, strictPort: true },
+  // Prefer 5173 but fall back to the next free port if something else is using it.
+  server: { port: 5173, strictPort: false },
 });
