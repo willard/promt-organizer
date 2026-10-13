@@ -1,5 +1,5 @@
 import { normalizeSpec, type Spec } from './spec';
-import { normalizeTemplate, type Template } from './templates';
+import { FileFormatError, TEMPLATE_FILE_KIND, normalizeTemplate, parseTemplateFile, type Template } from './templates';
 
 interface DesktopApi {
   listSpecs(): Promise<unknown[]>;
@@ -9,7 +9,7 @@ interface DesktopApi {
   saveTemplate(template: Template): Promise<boolean>;
   deleteTemplate(id: string): Promise<boolean>;
   saveText(opts: { defaultName: string; content: string; filters: { name: string; extensions: string[] }[] }): Promise<string | null>;
-  openJson(): Promise<string | null>;
+  openJson(filterName: string): Promise<string | null>;
   aiStatus(): Promise<AiStatus>;
   aiSetKey(key: string): Promise<AiStatus>;
   aiClearKey(): Promise<AiStatus>;
@@ -127,31 +127,45 @@ function downloadInBrowser(name: string, content: string, type: string) {
 }
 
 /** Returns the saved path (desktop), the file name (browser), or null if the user cancelled. */
-export async function exportFile(name: string, content: string, kind: 'md' | 'json'): Promise<string | null> {
-  const filters =
-    kind === 'md' ? [{ name: 'Markdown', extensions: ['md'] }] : [{ name: 'Spec draft', extensions: ['json'] }];
+export async function exportFile(
+  name: string,
+  content: string,
+  kind: 'md' | 'json' | 'template',
+): Promise<string | null> {
+  const filterName = { md: 'Markdown', json: 'Spec draft', template: 'Prompt Organizer template' }[kind];
+  const filters = [{ name: filterName, extensions: [kind === 'md' ? 'md' : 'json'] }];
   if (window.api) return window.api.saveText({ defaultName: name, content, filters });
   downloadInBrowser(name, content, kind === 'md' ? 'text/markdown' : 'application/json');
   return name;
 }
 
+/** Let the user pick a JSON file and return its text, or null if they cancelled. */
+async function pickJsonText(filterName: string): Promise<string | null> {
+  if (window.api) return window.api.openJson(filterName);
+  return new Promise<string | null>((resolve) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json,application/json';
+    input.onchange = () => {
+      const file = input.files?.[0];
+      if (!file) return resolve(null);
+      file.text().then(resolve, () => resolve(null));
+    };
+    input.click();
+  });
+}
+
 export async function importDraft(): Promise<Spec | null> {
-  let text: string | null = null;
-  if (window.api) {
-    text = await window.api.openJson();
-  } else {
-    text = await new Promise<string | null>((resolve) => {
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = '.json,application/json';
-      input.onchange = () => {
-        const file = input.files?.[0];
-        if (!file) return resolve(null);
-        file.text().then(resolve, () => resolve(null));
-      };
-      input.click();
-    });
-  }
+  const text = await pickJsonText('Spec draft');
   if (!text) return null;
-  return normalizeSpec(JSON.parse(text));
+  const raw = JSON.parse(text);
+  if (raw?.kind === TEMPLATE_FILE_KIND) {
+    throw new FileFormatError('That file is a template. Import it from New spec → Import template.');
+  }
+  return normalizeSpec(raw);
+}
+
+export async function importTemplate(existingNames: string[]): Promise<Template | null> {
+  const text = await pickJsonText('Prompt Organizer template');
+  return text ? parseTemplateFile(text, existingNames) : null;
 }

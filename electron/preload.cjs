@@ -8,7 +8,7 @@ contextBridge.exposeInMainWorld('api', {
   saveTemplate: (template) => ipcRenderer.invoke('templates:save', template),
   deleteTemplate: (id) => ipcRenderer.invoke('templates:delete', id),
   saveText: (opts) => ipcRenderer.invoke('file:saveText', opts),
-  openJson: () => ipcRenderer.invoke('file:openJson'),
+  openJson: (filterName) => ipcRenderer.invoke('file:openJson', filterName),
   aiStatus: () => ipcRenderer.invoke('ai:status'),
   aiSetKey: (key) => ipcRenderer.invoke('ai:setKey', key),
   aiClearKey: () => ipcRenderer.invoke('ai:clearKey'),

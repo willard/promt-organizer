@@ -71,11 +71,11 @@ ipcMain.handle('file:saveText', async (e, { defaultName, content, filters }) => 
   return filePath;
 });
 
-ipcMain.handle('file:openJson', async (e) => {
+ipcMain.handle('file:openJson', async (e, filterName) => {
   const win = BrowserWindow.fromWebContents(e.sender);
   const { canceled, filePaths } = await dialog.showOpenDialog(win, {
     properties: ['openFile'],
-    filters: [{ name: 'Spec draft', extensions: ['json'] }],
+    filters: [{ name: typeof filterName === 'string' ? filterName : 'JSON', extensions: ['json'] }],
   });
   if (canceled || !filePaths[0]) return null;
   return fs.readFile(filePaths[0], 'utf8');

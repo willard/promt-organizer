@@ -13,13 +13,20 @@ import {
   deleteTemplate,
   exportFile,
   importDraft,
+  importTemplate,
   listSpecs,
   listTemplates,
   saveSpec,
   saveTemplate,
   type AiStatus,
 } from './lib/storage';
-import { specFromTemplate, type Template } from './lib/templates';
+import {
+  FileFormatError,
+  serializeTemplate,
+  specFromTemplate,
+  templateFileName,
+  type Template,
+} from './lib/templates';
 
 const slug = (s: string) => s.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'spec';
 
@@ -122,6 +129,23 @@ export default function App() {
     }
   };
 
+  const exportTemplate = async (t: Template) => {
+    const saved = await exportFile(templateFileName(t), serializeTemplate(t), 'template');
+    if (saved) notify(`Saved ${saved}`);
+  };
+
+  const importTemplateFile = async () => {
+    try {
+      const t = await importTemplate(templates.map((x) => x.name));
+      if (!t) return;
+      await saveTemplate(t);
+      setTemplates((list) => [t, ...list]);
+      notify(`Template "${t.name}" imported`);
+    } catch (e) {
+      notify(e instanceof FileFormatError ? e.message : 'Could not import that template');
+    }
+  };
+
   const removeTemplate = async (t: Template) => {
     if (!confirm(`Delete template "${t.name}"? Specs made from it are not affected.`)) return;
     await deleteTemplate(t.id);
@@ -168,8 +192,8 @@ export default function App() {
       setSpec({ ...s, updatedAt: new Date().toISOString() });
       setStepIndex(0);
       notify('Draft imported');
-    } catch {
-      notify('That file is not a valid spec draft');
+    } catch (e) {
+      notify(e instanceof FileFormatError ? e.message : 'That file is not a valid spec draft');
     }
   };
 
@@ -335,6 +359,8 @@ export default function App() {
           templates={templates}
           onPick={pickTemplate}
           onDelete={removeTemplate}
+          onExport={exportTemplate}
+          onImport={importTemplateFile}
           onClose={() => setShowPicker(false)}
         />
       )}

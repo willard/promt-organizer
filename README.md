@@ -19,7 +19,7 @@ Instead of typing a vague one-paragraph prompt, you answer focused questions ste
 ## Features
 
 - **Improve with AI**: Claude reviews the spec and proposes missing acceptance criteria, non-goals, milestones and agent rules, and flags contradictions. Each suggestion is editable and is only added when you click Apply (or Apply all)
-- **Templates**: start a new spec from a starter (Web app, REST API, CLI tool, Desktop app, Library) with the stack, commands, agent rules, quality bar and definition of done prefilled, or save any spec as your own template, choosing which sections to include
+- **Templates**: start a new spec from a starter (Web app, REST API, CLI tool, Desktop app, Library) with the stack, commands, agent rules, quality bar and definition of done prefilled, or save any spec as your own template, choosing which sections to include. Share templates as `.template.json` files with Export / Import template in the New spec picker
 - Live Markdown preview with a completeness meter
 - **Spec check**: missing essentials, features without acceptance criteria, and vague words like "fast" or "user-friendly"
 - Drafts autosave to the app's user-data folder; switch between multiple specs in the sidebar

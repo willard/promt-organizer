@@ -4,6 +4,10 @@ import { lintSpec } from './lint';
 import { emptyEntity, emptyFeature, emptySpec, type Spec } from './spec';
 import {
   BUILT_IN_TEMPLATES,
+  FileFormatError,
+  parseTemplateFile,
+  serializeTemplate,
+  templateFileName,
   DEFAULT_SECTIONS,
   createTemplate,
   extractTemplateSpec,
@@ -100,5 +104,42 @@ describe('BUILT_IN_TEMPLATES', () => {
       expect(steps.has('quality'), t.name).toBe(false);
       expect(generateMarkdown(s)).toContain('## Tech stack');
     }
+  });
+});
+
+describe('template files', () => {
+  const tpl = () => createTemplate(full(), 'Go CLI: v2!', 'Mine', ['tech', 'agent']);
+
+  it('round-trips through export and import with a new id', () => {
+    const t = tpl();
+    const back = parseTemplateFile(serializeTemplate(t));
+    expect(back.id).not.toBe(t.id);
+    expect(back.spec.id).not.toBe(t.spec.id);
+    expect(back).toMatchObject({ name: 'Go CLI: v2!', description: 'Mine', sections: ['tech', 'agent'] });
+    expect(back.spec.tech.languages).toBe('Go');
+    expect(back.spec.agent.rules).toEqual(['Run tests']);
+    expect(back.builtIn).toBeUndefined();
+  });
+
+  it('does not export the built-in flag, so a shared starter imports as a normal template', () => {
+    const text = serializeTemplate(BUILT_IN_TEMPLATES[0]);
+    expect(text).not.toContain('builtIn');
+    expect(parseTemplateFile(text).builtIn).toBeUndefined();
+  });
+
+  it('renames on a name clash, case-insensitively', () => {
+    expect(parseTemplateFile(serializeTemplate(tpl()), ['go cli: V2!']).name).toBe('Go CLI: v2! (imported)');
+  });
+
+  it('rejects non-JSON, spec drafts and damaged templates with a readable error', () => {
+    expect(() => parseTemplateFile('nope')).toThrow(FileFormatError);
+    expect(() => parseTemplateFile(JSON.stringify(full()))).toThrow(/not a Prompt Organizer template/);
+    expect(() => parseTemplateFile(JSON.stringify({ kind: 'prompt-organizer-template', template: {} }))).toThrow(
+      /incomplete or damaged/,
+    );
+  });
+
+  it('builds a safe file name', () => {
+    expect(templateFileName(tpl())).toBe('go-cli-v2.template.json');
   });
 });

@@ -887,15 +887,38 @@ pre {
   border-radius: var(--radius);
 }
 
-.tpl-card .icon-btn {
-  position: absolute;
-  top: 6px;
-  right: 6px;
+.tpl-card {
+  flex-direction: column;
+}
+
+.tpl-actions {
+  display: flex;
+  gap: 14px;
+  padding: 0 14px 10px;
+  font-size: 12px;
+}
+
+.tpl-actions .link-btn {
+  margin-left: 0;
+}
+
+.link-btn.danger {
+  color: var(--danger);
+}
+
+.tpl-heading-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-top: 18px;
+}
+
+.tpl-heading-row .tpl-heading {
+  margin-top: 0;
 }
 
 .tpl-name {
   font-weight: 600;
-  padding-right: 24px;
 }
 
 .tpl-desc {

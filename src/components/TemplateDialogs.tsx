@@ -31,11 +31,13 @@ interface PickerProps {
   templates: Template[];
   onPick: (t: Template | null) => void;
   onDelete: (t: Template) => void;
+  onExport: (t: Template) => void;
+  onImport: () => void;
   onClose: () => void;
 }
 
 /** Shown on "New spec": blank, built-in starters, or the user's own templates. */
-export function TemplatePicker({ templates, onPick, onDelete, onClose }: PickerProps) {
+export function TemplatePicker({ templates, onPick, onDelete, onExport, onImport, onClose }: PickerProps) {
   const card = (t: Template) => (
     <div key={t.id} className="tpl-card">
       <button type="button" className="tpl-open" onClick={() => onPick(t)}>
@@ -47,9 +49,14 @@ export function TemplatePicker({ templates, onPick, onDelete, onClose }: PickerP
         </span>
       </button>
       {!t.builtIn && (
-        <button type="button" className="icon-btn" aria-label={`Delete template ${t.name}`} onClick={() => onDelete(t)}>
-          ×
-        </button>
+        <div className="tpl-actions">
+          <button type="button" className="link-btn" aria-label={`Export template ${t.name}`} onClick={() => onExport(t)}>
+            Export
+          </button>
+          <button type="button" className="link-btn danger" aria-label={`Delete template ${t.name}`} onClick={() => onDelete(t)}>
+            Delete
+          </button>
+        </div>
       )}
     </div>
   );
@@ -64,11 +71,16 @@ export function TemplatePicker({ templates, onPick, onDelete, onClose }: PickerP
           </button>
         </div>
       </div>
-      {templates.length > 0 && (
-        <>
-          <h3 className="tpl-heading">My templates</h3>
-          <div className="tpl-grid">{templates.map(card)}</div>
-        </>
+      <div className="tpl-heading-row">
+        <h3 className="tpl-heading">My templates</h3>
+        <button type="button" className="link-btn" onClick={onImport}>
+          Import template…
+        </button>
+      </div>
+      {templates.length > 0 ? (
+        <div className="tpl-grid">{templates.map(card)}</div>
+      ) : (
+        <p className="help">Save any spec as a template from the Review step, or import a .template.json file.</p>
       )}
       <h3 className="tpl-heading">Starters</h3>
       <p className="help">Prefill the stack, commands, agent rules and definition of done. Edit anything afterwards.</p>

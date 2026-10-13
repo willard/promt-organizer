@@ -79,6 +79,46 @@ export function specFromTemplate(t: Template): Spec {
   return spec;
 }
 
+// --- Template files -----------------------------------------------------------
+
+export const TEMPLATE_FILE_KIND = 'prompt-organizer-template';
+
+/** Thrown when an imported file is valid JSON but not the kind of file expected. */
+export class FileFormatError extends Error {}
+
+export function templateFileName(t: Template): string {
+  const slug = t.name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  return `${slug || 'template'}.template.json`;
+}
+
+export function serializeTemplate(t: Template): string {
+  const { builtIn: _builtIn, ...rest } = t;
+  return JSON.stringify({ kind: TEMPLATE_FILE_KIND, version: 1, template: rest }, null, 2);
+}
+
+/**
+ * Parse an exported template file into a new template. It always gets a fresh id so importing never overwrites
+ * an existing template; a name clash with `existingNames` gets an "(imported)" suffix.
+ */
+export function parseTemplateFile(text: string, existingNames: string[] = []): Template {
+  let raw: unknown;
+  try {
+    raw = JSON.parse(text);
+  } catch {
+    throw new FileFormatError('That file is not valid JSON.');
+  }
+  const wrapper = raw as { kind?: unknown; template?: unknown };
+  if (wrapper?.kind !== TEMPLATE_FILE_KIND) {
+    throw new FileFormatError('That file is not a Prompt Organizer template. Spec drafts are imported with the Import button.');
+  }
+  const t = normalizeTemplate(wrapper.template);
+  if (!t) throw new FileFormatError('That template file is incomplete or damaged.');
+  const taken = new Set(existingNames.map((n) => n.trim().toLowerCase()));
+  let name = t.name.trim();
+  if (taken.has(name.toLowerCase())) name = `${name} (imported)`;
+  return { ...t, id: newId(), name, createdAt: new Date().toISOString(), spec: { ...t.spec, id: newId() } };
+}
+
 export function normalizeTemplate(raw: unknown): Template | null {
   if (!raw || typeof raw !== 'object') return null;
   const r = raw as Partial<Template>;
